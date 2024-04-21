@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" defer></script>
+
+</head>
+<style>
+    *{
+        margin:0; 
+        padding: 0; 
+    }
+    body{
+        height: 220vh;
+    }
+    .sideBar {
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 0;
+        justify-content: s;
+        height: 100vh;
+        width: 100%;
+      
+    }
+
+    @media (max-width:768px ) {
+        .sideBar{
+            height: auto;
+        }
+    }
+    ul li {
+        word-break: break-all;
+    }
+
+</style>
+<body class="bg-light">
+    <div class="container-fluid">
+        <div class="row">  
+                <div class="col-lg-2 col-md-2 col-sm-12  m-0 p-0">  
+            
+                <div class="sideBar bg-dark " id="sidebar">
+                    <ul class="nav flex-md-column flex-sm-row p-3">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="">Features</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="">Pricing</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-10 col-md-10 col-sm-12 mt-5">  
+                <main class="container-fluid d-flex align-items-center">
+                    <input class="form-control  form-control-sm" type="text" placeholder="enter task " aria-label=".form-control-lg example" name="task" style="height:70px" id="newTask" maxlength="70" > 
+                    
+                        <button class="btn btn-success m-2" style="height:70px" id="addTaskBtn" >Add</button>
+                     
+                    
+                </main>
+                <div class="container mt-5">
+                    <ul class="list-group d-flex justify-content-between" id="taskList">
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div> 
+
+
+    <script> 
+
+
+         
+        function getUserName() {
+            let url = window.location.href;
+            let urlArr = url.split('/');
+            let username = urlArr[urlArr.length - 1];
+            return username;
+        }
+     
+        let username = getUserName();
+
+        
+    // Wait for the DOM content to load before accessing elements
+document.addEventListener('DOMContentLoaded', function() {
+    let addBtn = document.querySelector('#addTaskBtn');
+    addBtn.addEventListener("click", function () {
+        let task = document.querySelector('#newTask').value;
+        task = task.trim();
+        if (task.length > 0) {
+            fetch(`/taskApp/${username}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ Task: task }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json(); // Assuming server responds with JSON
+            })
+            .then(data => {
+                let taskList = document.querySelector('#taskList');
+                taskList.innerHTML = '';
+                data.forEach(task => {
+                    let li = createTaskElement(task);
+                    taskList.appendChild(li);
+                });
+                
+                // Attach event listeners to delete buttons after they are created
+                attachDeleteEventListeners();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    });  
+
+    fetch(`/taskApp/${username}/tasks`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json(); // Assuming server responds with JSON
+    })
+    .then (data => {
+        let taskList = document.querySelector('#taskList');
+        data.forEach(task => {
+            let li = createTaskElement(task);
+            taskList.appendChild(li);
+        });
+        
+        // Attach event listeners to delete buttons after they are created
+        attachDeleteEventListeners();
+    });
+
+    // Function to create a new task element
+    function createTaskElement(task) {
+        let li = document.createElement('li'); 
+        li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+        
+        let deleteBtn = document.createElement('button'); 
+        deleteBtn.classList.add('btn', 'btn-danger', 'btn-sm');
+        deleteBtn.textContent = 'Delete';
+        
+        li.dataset.taskId = task.id;
+        
+        li.textContent = task.dicription;
+        li.appendChild(deleteBtn); 
+        
+        return li;
+    }
+
+    // Function to attach event listeners to delete buttons
+    function attachDeleteEventListeners() {
+        let deleteButtons = document.querySelectorAll('.btn-danger');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                let taskId = button.parentElement.dataset.taskId;
+                fetch(`/taskApp/deleteTask/${taskId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    // return response.json();
+                })
+                .then(() => {
+                    // Remove the task element from the UI
+                    button.parentElement.remove();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    }
+});
+
+
+       
+    </script>
+<body> 
+     
+</html>
